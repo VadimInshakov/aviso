@@ -126,16 +126,10 @@ func (aviso *Aviso) Start(fetcher Fetcher) {
 		for {
 			select {
 			case newNote := <-chMap:
-
-				//write to file
-				var htmlData = "<html><body>"
 				for source, mapLinks := range newNote {
 					for k, v := range mapLinks {
 
 						if aviso.isNew(v) {
-							htmlPart := fmt.Sprintf("<li> <a href=%s /> %s </li>", k, v)
-							htmlData = fmt.Sprintf("%s%s", htmlData, htmlPart)
-
 							// write to stdout
 							fmt.Printf("\n- %s\n%s", v, k)
 
@@ -147,9 +141,6 @@ func (aviso *Aviso) Start(fetcher Fetcher) {
 						}
 					}
 				}
-				htmlData = fmt.Sprintf("%s%s", htmlData, "<body/><html/>")
-				ioutil.WriteFile("./index.html", []byte(htmlData), 0644)
-
 			}
 		}
 	}()
