@@ -1,4 +1,4 @@
-Minimalistic scraper that seek specified links on scpecified sites (config.yaml) and save it to DB, html and throw it to stdout. 
+Minimalistic scraper that searches for specific links on the scpecific sites (config.yaml) and save it to DB, html and throw it to stdout. 
 
 **What you need to start**
 1) Specify sources and themes in config.yaml
