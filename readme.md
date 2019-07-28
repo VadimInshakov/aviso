@@ -7,8 +7,8 @@ Minimalistic scraper that seek specified links on scpecified sites (config.yaml)
 
 You can specify flags:
 
-`--method scrape` (start scraper for monitoring specified sites)
+`--task scrape` (start scraper for monitoring specified sites)
 
-`--method find --theme X` (find specific news with X pattern)
+`--task find --theme X` (find specific news with X pattern)
 
-`--method getall` (get all saved news)
+`--task getall` (get all saved news)
