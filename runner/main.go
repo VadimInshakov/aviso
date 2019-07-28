@@ -2,6 +2,7 @@ package main
 
 import (
 	"aviso"
+	"aviso/fetcher"
 	"flag"
 	"fmt"
 	"log"
@@ -17,7 +18,7 @@ func init() {
 	theme = flag.String("theme", "", "specify theme to find")
 	flag.Parse()
 
-	av = aviso.New("localhost", 5433, "postgres", "dbpass", "aviso")
+	av = aviso.New("localhost", 5433, "postgres", "dbsecret", "aviso")
 	av.ConnectDB()
 	//av.InitDB() // uncomment if news table in Postgres doesn't exist
 }
@@ -26,11 +27,14 @@ func main() {
 	switch *method {
 
 	case "scrape":
+		var _ aviso.Fetcher = (*fetcher.LinksFetcher)(nil)
+		var myfetcher *fetcher.LinksFetcher = &fetcher.LinksFetcher{Protocol: "https"}
+
 		c := time.Tick(5 * time.Second)
 		for {
 			select {
 			case <-c:
-				go av.Start()
+				go av.Start(myfetcher)
 			}
 		}
 	case "find":

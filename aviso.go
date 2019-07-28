@@ -3,14 +3,16 @@ package aviso
 import (
 	"aviso/db"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
-	"strings"
 	"sync"
 	"time"
 )
+
+type Fetcher interface {
+	Fetch(url, theme string) (map[string]map[string]string, error)
+}
 
 type Aviso struct {
 	DB *db.DB
@@ -41,26 +43,13 @@ func (aviso *Aviso) ConnectDB() {
 }
 
 // Extract all http** links from a given webpage
-func (av *Aviso) Scrape(url string, theme string, ch chan map[string]map[string]string) {
+func (av *Aviso) Scrape(fetcher Fetcher, url string, theme string, ch chan map[string]map[string]string) {
 
-	doc, err := goquery.NewDocument(url)
+	links, err := fetcher.Fetch(url, theme)
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	var links = make(map[string]map[string]string, 100)
-	var submap = make(map[string]string)
-	doc.Find("a").Each(func(i int, s *goquery.Selection) {
-		if strings.Contains(s.Text(), theme) {
-			href, _ := s.Attr("href")
-			if !strings.Contains(href, "https:") {
-				url = strings.ReplaceAll(url, "/?hl=ru", "")
-				href = url + href[1:]
-			}
-			submap[href] = s.Text()
-		}
-	})
-	links[url] = submap
 
 	ch <- links
 	av.wg.Done()
@@ -109,7 +98,7 @@ func (aviso *Aviso) FindByTheme(theme string) ([]db.QueryResult, error) {
 	return result, nil
 }
 
-func (aviso *Aviso) Start() {
+func (aviso *Aviso) Start(fetcher Fetcher) {
 
 	// Reed url from yaml
 	seedUrls, themes, err := GetTargets()
@@ -126,7 +115,7 @@ func (aviso *Aviso) Start() {
 		aviso.wg.Add(1)
 		for _, url := range seedUrls {
 			aviso.wg.Add(1)
-			go aviso.Scrape(url, theme, chMap)
+			go aviso.Scrape(fetcher, url, theme, chMap)
 		}
 		aviso.wg.Done()
 	}
