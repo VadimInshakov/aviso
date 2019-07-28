@@ -18,7 +18,7 @@ func init() {
 	theme = flag.String("theme", "", "specify theme to find")
 	flag.Parse()
 
-	av = aviso.New("localhost", 5433, "postgres", "dbsecret", "aviso")
+	av = aviso.New("../config.yaml", "localhost", 5433, "postgres", "dbsecret", "aviso")
 	av.ConnectDB()
 	//av.InitDB() // uncomment if news table in Postgres doesn't exist
 }

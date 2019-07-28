@@ -15,13 +15,14 @@ type Fetcher interface {
 }
 
 type Aviso struct {
-	DB *db.DB
-	wg *sync.WaitGroup
+	DB     *db.DB
+	wg     *sync.WaitGroup
+	Config string
 }
 
-func New(host string, port int, user, password, dbname string) *Aviso {
+func New(config, host string, port int, user, password, dbname string) *Aviso {
 	dbInstance := db.CreateDBConf(host, port, user, password, dbname)
-	return &Aviso{DB: dbInstance, wg: &sync.WaitGroup{}}
+	return &Aviso{DB: dbInstance, wg: &sync.WaitGroup{}, Config: config}
 }
 
 func (aviso *Aviso) InitDB() {
@@ -55,8 +56,8 @@ func (av *Aviso) Scrape(fetcher Fetcher, url string, theme string, ch chan map[s
 	av.wg.Done()
 }
 
-func GetTargets() ([]string, []string, error) {
-	data, err := ioutil.ReadFile("../config.yaml")
+func (av *Aviso) GetTargets() ([]string, []string, error) {
+	data, err := ioutil.ReadFile(av.Config)
 	if err != nil {
 		log.Println("Reading file error: ")
 		return nil, nil, err
@@ -101,7 +102,7 @@ func (aviso *Aviso) FindByTheme(theme string) ([]db.QueryResult, error) {
 func (aviso *Aviso) Start(fetcher Fetcher) {
 
 	// Reed url from yaml
-	seedUrls, themes, err := GetTargets()
+	seedUrls, themes, err := aviso.GetTargets()
 	if err != nil {
 		log.Fatal(err)
 	}
