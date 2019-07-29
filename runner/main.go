@@ -16,11 +16,14 @@ var theme *string
 func init() {
 	method = flag.String("task", "scrape", "specify task")
 	theme = flag.String("theme", "", "specify theme to find")
+	init := flag.Bool("init", false, "init table (true) or not (false)")
 	flag.Parse()
 
 	av = aviso.New("../config.yaml", "localhost", 5433, "postgres", "dbsecret", "aviso")
 	av.ConnectDB()
-	//av.InitDB() // uncomment if news table in Postgres doesn't exist
+	if *init {
+		av.InitDB()
+	}
 }
 
 func main() {

@@ -32,7 +32,7 @@ func (f *MockFetcher) Fetch(url string, theme string) (map[string]map[string]str
 			submap[href] = s.Text()
 		}
 	})
-	links[url] = submap
+	links["https://mock.mock/"] = submap
 
 	return links, err
 }

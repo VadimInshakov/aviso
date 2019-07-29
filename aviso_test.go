@@ -3,7 +3,6 @@ package aviso
 import (
 	"aviso/mock"
 	"log"
-	"reflect"
 	"testing"
 )
 
@@ -15,7 +14,6 @@ func TestStart(t *testing.T) {
 
 	av = New("./config.yaml", "localhost", 5433, "postgres", "dbsecret", "aviso")
 	av.ConnectDB()
-	// av.InitDB() // uncomment if news table in Postgres doesn't exist
 
 	// Reed url from yaml
 	seedUrls, themes, err := av.GetTargets()
@@ -44,15 +42,15 @@ func TestStart(t *testing.T) {
 				for _, mapLinks := range newNote {
 					for k, v := range mapLinks {
 						// write to stdout
-						got := reflect.TypeOf(v).Name()
-						want := "string"
+						got := v
+						want := "Путин акции простесты задержали"
 						if got != want {
-							t.Errorf("title type mismatch:\ngot:%s\nwant:%s", got, want)
+							t.Errorf("title mismatch:\ngot:%s\nwant:%s", got, want)
 						}
-						got = reflect.TypeOf(k).Name()
-						want = "string"
+						got = k
+						want = "https://mock.mock/mock"
 						if got != want {
-							t.Errorf("link type mismatch:\ngot:%s\nwant:%s", got, want)
+							t.Errorf("link mismatch:\ngot:%s\nwant:%s", got, want)
 						}
 					}
 				}
