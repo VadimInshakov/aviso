@@ -37,7 +37,6 @@ func TestStart(t *testing.T) {
 		av.wg.Done()
 	}
 
-	// Subscribe to both channels
 	go func() {
 		for {
 			select {

@@ -121,7 +121,6 @@ func (aviso *Aviso) Start(fetcher Fetcher) {
 		aviso.wg.Done()
 	}
 
-	// Subscribe to both channels
 	go func() {
 		for {
 			select {
