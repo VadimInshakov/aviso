@@ -64,9 +64,13 @@ func (db *DB) Init() error {
 	return nil
 }
 
-func (db *DB) Insert(theme string, link string, site string, time time.Time) error {
+func (db *DB) Insert(theme string, link string, site string, t time.Time) error {
 	query := `INSERT INTO public.news (theme, link, site, time) VALUES ($1, $2, $3, $4);`
-	_, err := db.Instance.Exec(query, theme, link, site, time)
+	loc, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		return err
+	}
+	_, err = db.Instance.Exec(query, theme, link, site, t.In(loc))
 	if err != nil {
 		return err
 	}
