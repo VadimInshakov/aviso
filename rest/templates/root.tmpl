@@ -1,0 +1,9 @@
+{{ define "root.tmpl" }}
+    {{ range .Links }}
+        <p style="margin-left:25%">
+            <a href="{{ .Link }}">{{ .Theme }}</a><br />
+            <a href="{{ .Site }}">{{ .Site }}</a><br />
+            {{ .Time }}
+        </p>
+    {{ end }}
+{{ end }}

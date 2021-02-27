@@ -26,7 +26,9 @@ func (f *LinksFetcher) Fetch(url string, theme string) (map[string]map[string]st
 			// so we need concatenate missing part in this case)
 			if !strings.Contains(href, fmt.Sprintf("%s:", f.Protocol)) {
 				url = strings.ReplaceAll(url, "/?hl=ru", "")
-				href = url + href[1:]
+				if len(href) > 0 {
+					href = url + href[1:]
+				}
 			}
 			submap[href] = s.Text()
 		}
