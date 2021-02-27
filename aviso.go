@@ -47,7 +47,6 @@ func (aviso *Aviso) ConnectDB() {
 func (av *Aviso) Scrape(fetcher Fetcher, url string, theme string, ch chan map[string]map[string]string) {
 
 	links, err := fetcher.Fetch(url, theme)
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -144,4 +143,14 @@ func (aviso *Aviso) Start(fetcher Fetcher) {
 		}
 	}()
 	aviso.wg.Wait()
+}
+
+func (aviso *Aviso) EndlessScrape(fetcher Fetcher) {
+	c := time.Tick(5 * time.Second)
+	for {
+		select {
+		case <-c:
+			go aviso.Start(fetcher)
+		}
+	}
 }
