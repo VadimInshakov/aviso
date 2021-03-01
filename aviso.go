@@ -20,27 +20,21 @@ type Aviso struct {
 	Config string
 }
 
-func New(config, host string, port int, user, password, dbname string) *Aviso {
-	dbInstance := db.CreateDBConf(host, port, user, password, dbname)
-	return &Aviso{DB: dbInstance, wg: &sync.WaitGroup{}, Config: config}
+func New(config, dbname string) (*Aviso, error) {
+	database, err := db.New(dbname)
+	if err != nil {
+		return nil, err
+	}
+	return &Aviso{DB: database, wg: &sync.WaitGroup{}, Config: config}, nil
 }
 
 func (aviso *Aviso) InitDB() {
 	// create table
 	err := aviso.DB.Init()
 	if err != nil {
-		log.Fatalln("db connection failed:", err.Error())
+		log.Fatal(err)
 	}
 	log.Println("DB initialized")
-}
-
-func (aviso *Aviso) ConnectDB() {
-	//create db config and init connection
-	err := aviso.DB.Connect()
-	if err != nil {
-		log.Fatalln("DB connection failed:", err.Error())
-	}
-	log.Println("Connected to Postgres successfully")
 }
 
 // Extract all http** links from a given webpage

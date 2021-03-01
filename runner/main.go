@@ -19,8 +19,11 @@ func init() {
 	init := flag.Bool("init", false, "init table (true) or not (false)")
 	flag.Parse()
 
-	av = aviso.New("./config.yaml", "0.0.0.0", 5432, "postgres", "mysecretpassword", "aviso")
-	av.ConnectDB()
+	var err error
+	av, err = aviso.New("./config.yaml", "aviso.db")
+	if err != nil {
+		panic(err)
+	}
 	if *init {
 		av.InitDB()
 	}
@@ -28,7 +31,6 @@ func init() {
 
 func main() {
 	switch *method {
-
 	case "scrape":
 		var _ aviso.Fetcher = (*fetcher.LinksFetcher)(nil)
 		var myfetcher *fetcher.LinksFetcher = &fetcher.LinksFetcher{Protocol: "https"}
@@ -43,7 +45,7 @@ func main() {
 		result, _ := av.FindByTheme(*theme)
 		fmt.Println("Finded:")
 		for _, queryresult := range result {
-			fmt.Printf("%d. %s\nLink: %s\nSource: %s\nTime: %s\n", queryresult.Id, queryresult.Theme, queryresult.Link, queryresult.Site, queryresult.Time)
+			fmt.Printf("%s\nLink: %s\nSource: %s\nTime: %s\n", queryresult.Theme, queryresult.Link, queryresult.Site, queryresult.Time)
 		}
 	case "getall":
 		//query from DB
@@ -54,7 +56,7 @@ func main() {
 
 		fmt.Println("From database:")
 		for _, queryresult := range result {
-			fmt.Printf("\n%d. %s\nLink: %s\nSource: %s\nTime: %s\n", queryresult.Id, queryresult.Theme, queryresult.Link, queryresult.Site, queryresult.Time)
+			fmt.Printf("\n%s\nLink: %s\nSource: %s\nTime: %s\n", queryresult.Theme, queryresult.Link, queryresult.Site, queryresult.Time)
 		}
 	case "server":
 		var _ aviso.Fetcher = (*fetcher.LinksFetcher)(nil)

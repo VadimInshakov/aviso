@@ -9,11 +9,9 @@ import (
 var av *Aviso
 
 func TestStart(t *testing.T) {
-
 	var myfetcher Fetcher = &mock.MockFetcher{Protocol: "https"}
-
-	av = New("./config.yaml", "localhost", 5433, "postgres", "dbsecret", "aviso")
-	av.ConnectDB()
+	var err error
+	av, err = New("./config.yaml", "aviso_test.db")
 
 	// Reed url from yaml
 	seedUrls, themes, err := av.GetTargets()
