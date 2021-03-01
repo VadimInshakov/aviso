@@ -1,13 +1,24 @@
-Minimalistic scraper that searches for specific links on the scpecific sites (config.yaml), save it to DB and throw it to stdout. 
+Minimalistic scraper that searches for specific links on the specific sites (config.yaml), save it to DB and throw it to stdout. 
 
 **What you need to start**
-1) You need PostgreSQL installed with database named `aviso`
-1) Specify sources and themes in config.yaml
-2) start program from `runner` directory with `go run main.go`
+1) specify sources and themes in config.yaml
+2) build:
+    
+          go build -o aviso runner/main.go
+3) init db:
+
+          ./aviso --init true
+          
+4) start:
+
+          ./aviso --task server
+  
 
 You can specify flags:
 
-`--task scrape` (start scraper for monitoring specified sites)
+`--task server` (start scraper with UI)
+
+`--task scrape` (start scraper for monitoring specified sites without UI)
 
 `--task find --theme X` (find specific news with X pattern)
 
