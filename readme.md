@@ -4,24 +4,19 @@ Minimalistic scraper that searches for specific links on the specific sites (con
 1) specify sources and themes in config.yaml
 2) build:
     
-          go build -o aviso runner/main.go
-3) init db:
-
-          ./aviso --init true
+          go build -o aviso cmd/main.go
           
-4) start:
+3) start:
 
           ./aviso --task server
   
 
 You can specify flags:
 
-`--task server` (start scraper with UI)
+`--task ui` (start scraper with UI)
 
-`--task scrape` (start scraper for monitoring specified sites without UI)
+`--task headless` (start scraper for headless monitoring specified sites)
 
 `--task find --theme X` (find specific news with X pattern)
 
 `--task getall` (get all saved news)
-
-`--init <true/false>` (init table in Postgres or not)

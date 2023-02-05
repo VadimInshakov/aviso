@@ -1,12 +1,12 @@
 package rest
 
 import (
-	"aviso/db"
+	"aviso/db/sqlite"
 	"github.com/gin-gonic/gin"
 	"net"
 )
 
-func Run(db *db.DB, host, port string) {
+func Run(db *sqlite.DB, host, port string) {
 	r := gin.Default()
 	handlers := NewHandlers(db)
 	r.LoadHTMLGlob("rest/templates/*")

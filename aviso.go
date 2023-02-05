@@ -1,76 +1,46 @@
 package aviso
 
 import (
-	"aviso/db"
+	"aviso/config"
+	"aviso/domain"
+	"aviso/fetcher"
 	"fmt"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	"log"
 	"sync"
 	"time"
 )
 
-type Fetcher interface {
-	Fetch(url, theme string) (map[string]map[string]string, error)
+type repo interface {
+	Init() error
+	Insert(theme string, link string, site string, t time.Time) error
+	QueryAll() ([]domain.WebObj, error)
+	GetByTheme(theme string) (*domain.WebObj, error)
+	FindByTheme(theme string) ([]domain.WebObj, error)
 }
 
 type Aviso struct {
-	DB     *db.DB
-	wg     *sync.WaitGroup
-	Config string
+	repo    repo
+	g       *errgroup.Group
+	targets *domain.Targets
 }
 
-func New(config, dbname string) (*Aviso, error) {
-	database, err := db.New(dbname)
+func New(configpath string, repo repo) (*Aviso, error) {
+	// Reed url from yaml
+	targets, err := config.GetTargets(configpath)
 	if err != nil {
 		return nil, err
 	}
-	return &Aviso{DB: database, wg: &sync.WaitGroup{}, Config: config}, nil
-}
-
-func (aviso *Aviso) InitDB() {
-	// create table
-	err := aviso.DB.Init()
-	if err != nil {
-		log.Fatal(err)
+	a := &Aviso{repo: repo, g: &errgroup.Group{}, targets: targets}
+	if err := a.repo.Init(); err != nil {
+		return nil, errors.Wrap(err, "repo init error")
 	}
-	log.Println("DB initialized")
-}
-
-// Extract all http** links from a given webpage
-func (av *Aviso) Scrape(fetcher Fetcher, url string, theme string, ch chan map[string]map[string]string) {
-
-	links, err := fetcher.Fetch(url, theme)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ch <- links
-	av.wg.Done()
-}
-
-func (av *Aviso) GetTargets() ([]string, []string, error) {
-	data, err := ioutil.ReadFile(av.Config)
-	if err != nil {
-		log.Println("Reading file error: ")
-		return nil, nil, err
-	}
-	type Targets struct {
-		Urls   []string `yaml:"urls"`
-		Themes []string `yaml:"themes"`
-	}
-	var t Targets
-	err = yaml.Unmarshal([]byte(data), &t)
-	if err != nil {
-		log.Println("Unmarshalling error: ")
-		return nil, nil, err
-	}
-
-	return t.Urls, t.Themes, nil
+	return a, nil
 }
 
 func (aviso *Aviso) isNew(theme string) bool {
-	result, err := aviso.DB.GetByTheme(theme)
+	result, err := aviso.repo.GetByTheme(theme)
 	if err != nil {
 		log.Println(err)
 		return true
@@ -83,8 +53,8 @@ func (aviso *Aviso) isNew(theme string) bool {
 	return true
 }
 
-func (aviso *Aviso) FindByTheme(theme string) ([]db.QueryResult, error) {
-	result, err := aviso.DB.FindByTheme(theme)
+func (aviso *Aviso) FindSavedByTheme(theme string) ([]domain.WebObj, error) {
+	result, err := aviso.repo.FindByTheme(theme)
 	if err != nil {
 		return nil, err
 	}
@@ -92,59 +62,70 @@ func (aviso *Aviso) FindByTheme(theme string) ([]db.QueryResult, error) {
 	return result, nil
 }
 
-func (aviso *Aviso) Start(fetcher Fetcher) {
-
-	// Reed url from yaml
-	seedUrls, themes, err := aviso.GetTargets()
+// Extract all links from a given webpage
+func (av *Aviso) scrape(f fetcher.Fetcher, url string, theme string, ch chan map[string]map[string]string, selectors, excludeSelectors []string) error {
+	links, err := f.Fetch(&fetcher.FetchQuery{Url: url, Theme: theme, Selectors: selectors, ExcludeSelectors: excludeSelectors})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	// Channels
+	ch <- links
+	return nil
+}
+
+func (aviso *Aviso) scrapeThemes(fetcher fetcher.Fetcher) {
 	chMap := make(chan map[string]map[string]string, 100)
-	defer close(chMap)
 
-	// Kick off the Scrape process (concurrently)
-	for _, theme := range themes {
-		aviso.wg.Add(1)
-		for _, url := range seedUrls {
-			aviso.wg.Add(1)
-			go aviso.Scrape(fetcher, url, theme, chMap)
+	// scrape sites concurrently
+	for _, url := range aviso.targets.Urls {
+		if len(aviso.targets.Themes) == 0 {
+			aviso.g.Go(func() error {
+				return aviso.scrape(fetcher, url.Link, "", chMap, url.Selectors, url.ExcludeSelectors)
+			})
+			continue
 		}
-		aviso.wg.Done()
+		for _, theme := range aviso.targets.Themes {
+			aviso.g.Go(func() error {
+				return aviso.scrape(fetcher, url.Link, theme, chMap, url.Selectors, url.ExcludeSelectors)
+			})
+		}
 	}
 
+	var chreader sync.WaitGroup
+	chreader.Add(1)
 	go func() {
-		for {
-			select {
-			case newNote := <-chMap:
-				for source, mapLinks := range newNote {
-					for k, v := range mapLinks {
+		for newNote := range chMap {
+			for source, mapLinks := range newNote {
+				for k, v := range mapLinks {
 
-						if aviso.isNew(v) {
-							// write to stdout
-							fmt.Printf("\n- %s\n%s", v, k)
+					if aviso.isNew(v) {
+						// write to stdout
+						fmt.Printf("\n- %s\n%s", v, k)
 
-							//write to database
-							err = aviso.DB.Insert(v, k, source, time.Now())
-							if err != nil {
-								log.Fatal(err)
-							}
+						//write to database
+						if err := aviso.repo.Insert(v, k, source, time.Now()); err != nil {
+							log.Fatal(err)
 						}
 					}
 				}
 			}
 		}
+		chreader.Done()
 	}()
-	aviso.wg.Wait()
+
+	if err := aviso.g.Wait(); err != nil {
+		log.Fatal(err)
+	}
+	close(chMap)
+	chreader.Wait()
 }
 
-func (aviso *Aviso) EndlessScrape(fetcher Fetcher) {
+func (aviso *Aviso) ScrapeLoop(fetcher fetcher.Fetcher) {
 	c := time.Tick(5 * time.Second)
 	for {
 		select {
 		case <-c:
-			go aviso.Start(fetcher)
+			go aviso.scrapeThemes(fetcher)
 		}
 	}
 }
