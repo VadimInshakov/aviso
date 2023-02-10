@@ -56,7 +56,7 @@ func (db *DB) Insert(theme string, link string, site string, t time.Time) error 
 
 func (db *DB) QueryAll() ([]domain.WebObj, error) {
 	arr := []domain.WebObj{}
-	query := `SELECT * FROM news;`
+	query := `SELECT * FROM news ORDER BY time DESC;`
 	rows, err := db.Instance.Query(query)
 	if err != nil {
 		return nil, err
