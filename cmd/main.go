@@ -15,7 +15,7 @@ func main() {
 	var method *string
 	var theme *string
 
-	method = flag.String("task", "scrape", "specify task")
+	method = flag.String("task", "ui", "specify task")
 	theme = flag.String("theme", "", "specify theme to find")
 	flag.Parse()
 
