@@ -66,17 +66,29 @@ func (f *LinksFetcher) Fetch(q *FetchQuery) (map[string]map[string]string, error
 			}
 
 			href, _ := s.Attr("href")
+
+			if strings.Contains(href, "comment") {
+				return
+			}
+
 			// some links are relational (like /addr, not http://<host>:<port>/addr),
 			// so we need concatenate missing part in this case)
 			if !strings.Contains(href, fmt.Sprintf("%s:", f.protocol)) {
 				q.Url = strings.ReplaceAll(q.Url, "/?hl=ru", "")
 				if len(href) > 0 {
-					href = q.Url + href[1:]
+					href = q.Url + href
 				}
 			}
-			submap[href] = s.Text()
+
+			text := strings.TrimSpace(s.Text())
+			if len(text) < 45 {
+				return
+			}
+
+			submap[href] = text
 		})
 	}
+
 	links[q.Url] = submap
 
 	return links, err
